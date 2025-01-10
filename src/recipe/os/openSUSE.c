@@ -10,18 +10,18 @@
 /**
  * @update 2024-08-16
  */
-static SourceInfo
-os_opensuse_sources[] = {
-  {&Upstream,       NULL},
-  {&Ali,            "https://mirrors.aliyun.com/opensuse"},
-  {&Volcengine,     "https://mirrors.volces.com/opensuse"},
-  {&Bfsu,           "https://mirrors.bfsu.edu.cn/opensuse"},
-  {&Ustc,           "https://mirrors.ustc.edu.cn/opensuse"},
-  {&Tuna,           "https://mirrors.tuna.tsinghua.edu.cn/opensuse"},
-  {&Tencent,        "https://mirrors.tencent.com/opensuse"},
-  // {&Tencent_Intra,  "https://mirrors.tencentyun.com/opensuse"},
-  {&Netease,        "https://mirrors.163.com/opensuse"},
-  {&Sohu,           "https://mirrors.sohu.com/opensuse"}
+static Source_t os_opensuse_sources[] =
+{
+  {&UpstreamProvider,  NULL},
+  {&Ali,              "https://mirrors.aliyun.com/opensuse"},
+  {&Volcengine,       "https://mirrors.volces.com/opensuse"},
+  {&Bfsu,             "https://mirrors.bfsu.edu.cn/opensuse"},
+  {&Ustc,             "https://mirrors.ustc.edu.cn/opensuse"},
+  {&Tuna,             "https://mirrors.tuna.tsinghua.edu.cn/opensuse"},
+  {&Tencent,          "https://mirrors.tencent.com/opensuse"},
+  // {&Tencent_Intra, "https://mirrors.tencentyun.com/opensuse"},
+  {&Netease,          "https://mirrors.163.com/opensuse"},
+  {&Sohu,             "https://mirrors.sohu.com/opensuse"}
 };
 def_sources_n(os_opensuse);
 
@@ -75,7 +75,9 @@ os_opensuse_setsrc (char *option)
 
   chsrc_run (cmd5, RunOpt_Default);
   chsrc_run (cmd6, RunOpt_Default);
-  chsrc_conclude (&source, SetsrcType_Untested);
+
+  ProgMode_ChgType = ChgType_Untested;
+  chsrc_conclude (&source);
 }
 
 def_target_s(os_opensuse);

@@ -2,34 +2,40 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  * -------------------------------------------------------------
  * File Authors  : Aoran Zeng <ccmywish@qq.com>
- * Contributors  :  Nil Null  <nil@null.org>
+ * Contributors  : happy game <happygame1024@gmail.com>
+ *               |
  * Created On    : <2023-09-03>
- * Last Modified : <2024-09-13>
+ * Last Modified : <2024-12-11>
  *
- * 2024-08-08: uv 似乎暂时没有实现换源
  * ------------------------------------------------------------*/
 
 void
 pl_python_getsrc (char *option)
 {
   bool pdm_exist    = false,
-       poetry_exist = false;
+       poetry_exist = false,
+       uv_exist     = false;
 
-  pl_python_check_unofficial_pkger (&poetry_exist, &pdm_exist);
+  pl_python_check_unofficial_pkger (&poetry_exist, &pdm_exist, &uv_exist);
 
   // 交给后面检查命令的存在性
   pl_python_pip_getsrc (option);
-  say ("");
+  br();
 
   if (poetry_exist)
     {
       pl_python_poetry_getsrc (option);
-      say ("");
+      br();
     }
 
   if (pdm_exist)
     {
       pl_python_pdm_getsrc (option);
+    }
+
+  if (uv_exist)
+    {
+      pl_python_uv_getsrc (option);
     }
 }
 
@@ -41,16 +47,15 @@ pl_python_setsrc (char *option)
     char *msg = CliOpt_InEnglish ? "Three package managers will be replaced for you at the same time: " \
                                          "pip, Poetry, PDM. If you need to change the source independently, " \
                                          "please run independently `chsrc set <pkg-manager>`"
-                                       : "将同时为您更换3个包管理器 pip, Poetry, PDM 的源，若需要独立换源，请独立运行 chsrc set <pkg-manager>";
+                                       : "将同时为您更换4个包管理器 pip, Poetry, PDM, uv 的源，若需要独立换源，请独立运行 chsrc set <pkg-manager>";
     chsrc_note2 (msg);
   }
 
-  char *setsrc_type = xy_streql (option, SetsrcType_Reset) ? SetsrcType_Reset : SetsrcType_Auto;
-
   bool pdm_exist    = false,
-       poetry_exist = false;
+       poetry_exist = false,
+       uv_exist     = false;
 
-  pl_python_check_unofficial_pkger (&poetry_exist, &pdm_exist);
+  pl_python_check_unofficial_pkger (&poetry_exist, &pdm_exist, &uv_exist);
 
   ProgMode_Target_Group = true;
   chsrc_yield_source_and_confirm (pl_python);
@@ -58,12 +63,12 @@ pl_python_setsrc (char *option)
 
   // 交给后面检查命令的存在性
   pl_python_pip_setsrc (option);
-  say ("");
+  br();
 
   if (poetry_exist)
     {
       pl_python_poetry_setsrc (option);
-      say ("");
+      br();
     }
 
   if (pdm_exist)
@@ -71,30 +76,36 @@ pl_python_setsrc (char *option)
       pl_python_pdm_setsrc (option);
     }
 
-  chsrc_conclude (&source, setsrc_type);
+  if (uv_exist)
+    {
+      pl_python_uv_setsrc (option);
+    }
+
+  ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+  chsrc_conclude (&source);
 }
 
 void
 pl_python_resetsrc (char *option)
 {
-  pl_python_setsrc (SetsrcType_Reset);
+  pl_python_setsrc (option);
 }
 
 
-FeatInfo
+Feature_t
 pl_python_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = true;
+  f.can_get = true;
+  f.can_reset = true;
 
-  fi.stcan_locally = CanSemi;
-  fi.locally = "pip 不支持，其他支持";
-  fi.can_english = false;
-  fi.can_user_define = true;
+  f.cap_locally = PartiallyCan;
+  f.cap_locally_explain = "Support `Poetry` & `PDM`, `uv`. No support for `pip`";
+  f.can_english = false;
+  f.can_user_define = true;
 
-  return fi;
+  return f;
 }
 
 def_target_gsrf(pl_python);

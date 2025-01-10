@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  * -------------------------------------------------------------
  * File Authors  : Aoran Zeng <ccmywish@qq.com>
- * Contributors  : Nul None <nul@none.org>
+ * Contributors  :  Nul None  <nul@none.org>
  * Created On    : <2023-09-03>
  * Last Modified : <2024-09-14>
  * ------------------------------------------------------------*/
@@ -38,7 +38,7 @@ pl_python_pip_setsrc (char *option)
       return;
     }
 
-  SourceInfo source;
+  Source_t source;
   chsrc_yield_for_the_source (pl_python);
   if (ProgMode_Target_Group!=true)
     chsrc_confirm_source;
@@ -53,7 +53,10 @@ pl_python_pip_setsrc (char *option)
   chsrc_run (cmd, RunOpt_No_Last_New_Line);
 
   if (ProgMode_Target_Group!=true)
-    chsrc_conclude (&source, SetsrcType_Auto);
+    {
+      ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+      chsrc_conclude (&source);
+    }
 }
 
 
@@ -63,30 +66,30 @@ pl_python_pip_setsrc (char *option)
 void
 pl_python_pip_resetsrc (char *option)
 {
-  pl_python_pip_setsrc (SetsrcType_Reset);
+  pl_python_pip_setsrc (option);
 }
 
 
 /**
  * chsrc ls pip
  */
-FeatInfo
+Feature_t
 pl_python_pip_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = true;
+  f.can_get = true;
+  f.can_reset = true;
 
   // pip 不支持项目级换源
-  fi.stcan_locally = CanNot;
-  fi.locally = NULL;
-  fi.can_english = true;
-  fi.can_user_define = true;
+  f.cap_locally = CanNot;
+  f.cap_locally_explain = NULL;
+  f.can_english = true;
+  f.can_user_define = true;
 
-  fi.note = NULL;
-  return fi;
+  f.note = NULL;
+  return f;
 }
 
 // def_target_gsrf(pl_python_pip);
-TargetInfo pl_python_pip_target = {def_target_inner_gsrf(pl_python_pip),def_target_sourcesn(pl_python)};
+Target_t pl_python_pip_target = {def_target_inner_gsrf(pl_python_pip),def_target_sourcesn(pl_python)};

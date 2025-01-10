@@ -1,20 +1,22 @@
 /** ------------------------------------------------------------
  * SPDX-License-Identifier: GPL-3.0-or-later
  * -------------------------------------------------------------
- * File Name     : chsrc-framework.h
+ * File Name     : core.c
  * File Authors  : Aoran Zeng <ccmywish@qq.com>
  *               |  Heng Guo  <2085471348@qq.com>
  * Contributors  :  Peng Gao  <gn3po4g@outlook.com>
+ *               | Happy Game <happygame10124@gmail.com>
+ *               | Yangmoooo  <yangmoooo@outlook.com>
  *               |
  * Created On    : <2023-08-29>
- * Last Modified : <2024-09-29>
+ * Last Modified : <2024-12-14>
  *
- * chsrc 框架
+ * chsrc framework
  * ------------------------------------------------------------*/
 
 #include "xy.h"
-#include "source.h"
-// #include <pthread.h>
+#include "struct.h"
+#include "mirror.c"
 
 #define App_Name "chsrc"
 
@@ -25,6 +27,20 @@ bool ProgMode_CMD_Reset   = false;
 
 bool ProgMode_Target_Group = false;
 int  ProgMode_Leader_Selected_Index = -1;
+
+/* 此时 chsrc_run() 不再是recipe中指定要运行的一个外部命令，而是作为一个功能实现的支撑 */
+bool ProgMode_Run_as_a_Service = false;
+
+enum ChgType_t
+{
+  ChgType_Auto,
+  ChgType_Reset,
+  ChgType_SemiAuto,
+  ChgType_Manual,
+  ChgType_Untested
+};
+
+enum ChgType_t ProgMode_ChgType = ChgType_Auto;
 
 
 /* 命令行选项 */
@@ -51,17 +67,21 @@ bool CliOpt_NoColor   = false;
  * 3. 最终效果本质由第三方软件决定，如 poetry 默认实现的就是项目级的换源
  */
 
-#define Exit_UserCause    1
-#define Exit_Unsupported  2
-#define Exit_MatinerIssue 3
-#define Exit_FatalBug     4
-#define Exit_FatalUnkownError  5
+#define Exit_OK               0
+#define Exit_Fatal            1
+#define Exit_Unknown          2
+#define Exit_Unsupported      3
+#define Exit_UserCause        4
+#define Exit_MaintainerCause  5
+#define Exit_ExternalError    6
 
-#define chsrc_log(str)   xy_log(App_Name,str)
-#define chsrc_succ(str)  xy_succ(App_Name,str)
-#define chsrc_info(str)  xy_info(App_Name,str)
-#define chsrc_warn(str)  xy_warn(App_Name,str)
-#define chsrc_error(str) xy_error(App_Name,str)
+#define chsrc_log(str)     xy_log(App_Name,str)
+#define chsrc_succ(str)    xy_succ(App_Name,str)
+#define chsrc_info(str)    xy_info(App_Name,str)
+#define chsrc_warn(str)    xy_warn(App_Name,str)
+#define chsrc_error(str)   xy_error(App_Name,str)
+#define chsrc_debug(str)   xy_warn(App_Name "(DEBUG)",str)
+#define chsrc_verbose(str) xy_info(App_Name "(VERBOSE)",str)
 
 #define red(str)      xy_str_to_red(str)
 #define blue(str)     xy_str_to_blue(str)
@@ -76,21 +96,40 @@ bool CliOpt_NoColor   = false;
 #define bdpurple(str) xy_str_to_bold(xy_str_to_purple(str))
 
 // 2系列都是带有括号的
-#define chsrc_succ2(str)  xy_succ_brkt(App_Name,CliOpt_InEnglish?"SUCCEED":"成功",str)
-#define chsrc_log2(str)   xy_info_brkt(App_Name,"LOG",str)
-#define chsrc_warn2(str)  xy_warn_brkt(App_Name,CliOpt_InEnglish?"WARN":"警告",str)
-#define chsrc_error2(str) xy_error_brkt(App_Name,CliOpt_InEnglish?"ERROR":"错误",str)
+#define chsrc_succ2(str)    xy_succ_brkt(App_Name,CliOpt_InEnglish?"SUCCEED":"成功",str)
+#define chsrc_log2(str)     xy_info_brkt(App_Name,"LOG",str)
+#define chsrc_warn2(str)    xy_warn_brkt(App_Name,CliOpt_InEnglish?"WARN":"警告",str)
+#define chsrc_error2(str)   xy_error_brkt(App_Name,CliOpt_InEnglish?"ERROR":"错误",str)
+#define chsrc_debug2(str)   xy_warn_brkt(App_Name,"DEBUG",str)
+#define chsrc_verbose2(str) xy_info_brkt(App_Name,"VERBOSE",str)
 
 void
-chsrc_note2 (const char* str)
+chsrc_note2 (const char *str)
 {
   char *msg = CliOpt_InEnglish ? "NOTE" : "提示";
-  xy_log_brkt (yellow (App_Name), bdyellow (msg), yellow (str));
+  xy_log_brkt (yellow(App_Name), bdyellow(msg), yellow(str));
+}
+
+void
+chsrc_log_write (const char *filename)
+{
+  char *msg = CliOpt_InEnglish ? "WRITE" : "写入";
+
+  xy_log_brkt (blue(App_Name), bdblue(msg), blue(filename));
+}
+
+void
+chsrc_log_backup (const char *filename)
+{
+  char *msg = CliOpt_InEnglish ? "BACKUP" : "备份";
+
+  char *bak = xy_2strjoin (filename, ".bak");
+  xy_log_brkt (blue(App_Name), bdblue(msg), xy_strjoin (3, bdyellow(filename), " -> ", bdgreen(bak)));
 }
 
 #define YesMark "✓"
 #define NoMark "x"
-#define SemiYesMark "⍻"
+#define HalfYesMark "⍻"
 
 /**
  * @translation Done
@@ -206,8 +245,8 @@ query_program_exist (char *check_cmd, char *prog_name, int mode)
         {
           // xy_warn (xy_strjoin(4, "× 命令 ", progname, " 不存在，", buf));
           log_check_result (prog_name, msg, false);
-          return false;
         }
+      return false;
     }
   else
     {
@@ -302,26 +341,44 @@ chsrc_check_file (char *path)
 /**
  * 用于 _setsrc 函数，检测用户输入的镜像站code，是否存在于该target可用源中
  *
+ * @note 一个源Source必定来自于一个Provider，所以该函数名叫 query_provider_exist
+ *
  * @param  target  目标名
  * @param  input   如果用户输入 default 或者 def，则选择第一个源
  */
-#define find_mirror(s, input) query_mirror_exist(s##_sources, s##_sources_n, (char*)#s+3, input)
+#define find_mirror(s, input) query_provider_exist(s##_sources, s##_sources_n, (char*)#s+3, input)
 int
-query_mirror_exist (SourceInfo *sources, size_t size, char *target, char *input)
+query_provider_exist (Source_t *sources, size_t size, char *target, char *input)
 {
   if (is_url (input))
     {
-      char *msg = CliOpt_InEnglish ? "Using user-defined sources for this software is not supported at this time, please contact the developer to ask why or request support" : "暂不支持对该软件使用用户自定义源，请联系开发者询问原因或请求支持";
+      char *msg = CliOpt_InEnglish ? "Using user-defined sources for this software is not supported at this time, please contact the developers to ask why or request support" : "暂不支持对该软件使用用户自定义源，请联系开发者询问原因或请求支持";
       chsrc_error (msg);
       exit (Exit_Unsupported);
     }
 
-  if (0==size || 1==size)
+  if (0==size)
     {
       char *msg1 = CliOpt_InEnglish ? "Currently " : "当前 ";
-      char *msg2 = CliOpt_InEnglish ? " doesn't have any source available, please contact the maintainer" : " 无任何可用源，请联系维护者";
+      char *msg2 = CliOpt_InEnglish ? " doesn't have any source available. Please contact the maintainers" : " 无任何可用源，请联系维护者";
       chsrc_error (xy_strjoin (3, msg1, target, msg2));
-      exit (Exit_MatinerIssue);
+      exit (Exit_MaintainerCause);
+    }
+
+  if (1==size)
+    {
+      char *msg1 = CliOpt_InEnglish ? "Currently " : "当前 ";
+      char *msg2 = CliOpt_InEnglish ? " only the upstream source exists. Please contact the maintainers" : " 仅存在上游默认源，请联系维护者";
+      chsrc_error (xy_strjoin (3, msg1, target, msg2));
+      exit (Exit_MaintainerCause);
+    }
+
+  /* if (xy_streql ("reset", input)) 不再使用这种方式 */
+  if (ProgMode_CMD_Reset)
+    {
+      char *msg = CliOpt_InEnglish ? "Will reset to the upstream's default source" : "将重置为上游默认源";
+      say (msg);
+      return 0; /* 返回第1个，因为第1个是上游默认源 */
     }
 
   if (2==size)
@@ -334,28 +391,21 @@ query_mirror_exist (SourceInfo *sources, size_t size, char *target, char *input)
       chsrc_succ (xy_strjoin (4, name, msg1, target, msg2));
     }
 
-  if (xy_streql ("reset", input))
-    {
-      char *msg = CliOpt_InEnglish ? "Will reset to the upstream's default source" : "将重置为上游默认源";
-      say (msg);
-      return 0; // 返回第1个，因为第1个是上游默认源
-    }
-
   if (xy_streql ("first", input))
     {
       char *msg = CliOpt_InEnglish ? "Will use the first speedy source measured by maintainers" : "将使用维护团队测速第一的源";
       say (msg);
-      return 1; // 返回第2个，因为第1个是上游默认源
+      return 1; /* 返回第2个，因为第1个是上游默认源 */
     }
 
   int idx = 0;
-  SourceInfo source = sources[0];
+  Source_t src = sources[0];
 
   bool exist = false;
   for (int i=0; i<size; i++)
     {
-      source = sources[i];
-      if (xy_streql (source.mirror->code, input))
+      src = sources[i];
+      if (xy_streql (src.mirror->code, input))
         {
           idx = i;
           exist = true;
@@ -380,6 +430,8 @@ query_mirror_exist (SourceInfo *sources, size_t size, char *target, char *input)
 
 /**
  * 该函数来自 oh-my-mirrorz.py，由 @ccmywish 翻译为C语言，但功劳和版权属于原作者
+ *
+ * @param speed 单位为Byte/s
  */
 char *
 to_human_readable_speed (double speed)
@@ -420,13 +472,15 @@ measure_speed_for_url (void *url)
 
   time_sec = "8";
 
-  /* 现在我们切换至跳转后的链接来测速，不再使用下述判断
-  if (xy_str_start_with(url, "https://registry.npmmirror"))
-    {
-      // 这里 npmmirror 跳转非常慢，需要1~3秒，所以我们给它留够至少8秒测速时间，否则非常不准
-      time_sec = "10";
-    }
-  */
+  /**
+   * 现在我们切换至跳转后的链接来测速，不再使用下述判断
+   *
+   * if (xy_str_start_with(url, "https://registry.npmmirror"))
+   *   {
+   *     // 这里 npmmirror 跳转非常慢，需要1~3秒，所以我们给它留够至少8秒测速时间，否则非常不准
+   *     time_sec = "10";
+   *   }
+   */
 
   char *ipv6 = ""; // 默认不启用
 
@@ -435,56 +489,26 @@ measure_speed_for_url (void *url)
       ipv6 = "--ipv6";
     }
 
-
   char *os_devnull = xy_os_devnull;
-  bool on_cygwin = false;
 
-  // https://github.com/RubyMetric/chsrc/issues/65
-  // curl (仅)在 Cygwin 上 -o nul 会把 nul 当做普通文件
-  // 为了践行 chsrc everywhere 的承诺，我们也考虑支持 Cygwin
-  if (0==system ("cygcheck --version >nul 2>nul"))
-    {
-      on_cygwin = true;
-      os_devnull = "/tmp/chsrc-measure-downloaded";
-    }
-
-  // 我们用 —L，因为Ruby China源会跳转到其他地方
-  // npmmirror 也会跳转
+  /**
+   * @note 我们用 —L，因为部分链接会跳转到其他地方，比如: RubyChina, npmmirror
+   */
   char *curl_cmd = xy_strjoin (8, "curl -qsL ", ipv6,
                                   " -o ", os_devnull,
                                   " -w \"%{http_code} %{speed_download}\" -m", time_sec,
-                                  " -A chsrc/" Chsrc_Banner_Version "  ", url);
+                                  " -A chsrc/" Chsrc_Version "  ", url);
 
   // chsrc_info (xy_2strjoin ("测速命令 ", curl_cmd));
 
-  char *curl_buf = NULL;
-
-  if (on_cygwin)
-    {
-      char *curl_script = ".chsrc_measure_tmp.sh";
-      FILE *f = fopen (curl_script, "w");
-        if (f==NULL)
-          exit (Exit_UserCause);
-      fputs (curl_cmd, f);
-      fclose (f);
-      curl_buf = xy_run ( xy_2strjoin ("bash .\\", curl_script), 0, NULL);
-      system (xy_2strjoin ("del ", curl_script));
-      system (xy_strjoin (3, "bash -c \"rm ", os_devnull, "\""));
-    }
-  else
-    {
-      curl_buf = xy_run (curl_cmd, 0, NULL);
-    }
-
-  // 如果尾部有换行，删除
-  curl_buf = xy_str_strip (curl_buf);
+  char *curl_buf = xy_run (curl_cmd, 0);
 
   return curl_buf;
 }
 
 
 /**
- * @return 返回速度speed
+ * @return 返回速度speed，单位为 Byte/s
  */
 double
 parse_and_say_curl_result (char *curl_buf)
@@ -532,49 +556,93 @@ get_max_ele_idx_in_dbl_ary (double *array, int size)
 /**
  * @param      sources        所有待测源
  * @param      size           待测源的数量
- * @param[out] speed_records  速度值记录
+ * @param[out] speed_records  速度值记录，单位为Byte/s
  */
 void
-measure_speed_for_every_source (SourceInfo sources[], int size, double speed_records[])
+measure_speed_for_every_source (Source_t sources[], int size, double speed_records[])
 {
-    bool get_measured[size]; /* 是否测速了 */
-     int get_measured_n = 0; /* 测速了几个 */
+    // bool get_measured[size]; /* 是否真正执行了测速 */
+     int get_measured_n = 0; /* 测速了几个        */
    char *measure_msgs[size];
 
   double speed = 0.0;
 
   for (int i=0; i<size; i++)
     {
-      SourceInfo src = sources[i];
-      const char *url = src.mirror->bigfile_url;
-      if (NULL==url)
+      Source_t src = sources[i];
+
+      SourceProvider_t *provider = src.provider;
+      SpeedMeasureInfo_t smi = provider->smi;
+
+      bool skip = smi.skip;
+
+      const char *url = smi.url;
+
+      if (!skip && NULL==url)
+        // 这种情况应当被视为bug，但是我们目前还是软处理
         {
-          if (xy_streql ("upstream", src.mirror->code))
+          char *msg1 = CliOpt_InEnglish ? "Maintainers don't offer " : "维护者未提供 ";
+          char *msg2 = CliOpt_InEnglish ? " mirror site's speed measure link, so skip it" : " 镜像站测速链接，跳过该站点";
+          chsrc_warn (xy_strjoin (3, msg1, provider->code, msg2));
+          speed = 0;
+
+          speed_records[i] = speed;
+          // get_measured[i] = false;
+          measure_msgs[i] = NULL;
+        }
+
+      if (skip)
+        {
+          if (xy_streql ("upstream", provider->code))
             {
-              // 上游源不测速，但不置0，因为要避免这种情况: 可能其他镜像站测速都为0，最后反而选择了该 upstream
-              speed = -999;
+              /* 上游源不测速，但不置0，因为要避免这种情况: 可能其他镜像站测速都为0，最后反而选择了该 upstream */
+              speed = -1024*1024*1024;
+              if (!src.url)
+                {
+                  smi.skip_reason_CN = "上游默认源URL未知，请帮助补充";
+                  smi.skip_reason_EN = "The default upstream source URL is unknown, please help to add";
+                }
+            }
+          else if (xy_streql ("user", provider->code))
+            {
+              /* 代码不会执行至此 */
+              speed = 1024*1024*1024;
             }
           else
             {
-              char *msg1 = CliOpt_InEnglish ? "Dev team doesn't offer " : "开发者未提供 ";
-              char *msg2 = CliOpt_InEnglish ? " mirror site's speed measure link, so skip it" : " 镜像站测速链接，跳过该站点";
-              chsrc_warn (xy_strjoin (3, msg1, src.mirror->code, msg2));
+              /* 不测速的 Provider */
               speed = 0;
             }
+          // get_measured[i] = false;
           speed_records[i] = speed;
-          get_measured[i] = false;
-          measure_msgs[i] = NULL;
+
+          const char *msg = CliOpt_InEnglish ? provider->abbr : provider->name;
+          const char *skip_reason = CliOpt_InEnglish ? smi.skip_reason_EN : smi.skip_reason_CN;
+          if (NULL==skip_reason)
+            {
+              skip_reason = CliOpt_InEnglish ? "SKIP for no reason" : "无理由跳过";
+            }
+          measure_msgs[i] = xy_strjoin (4, "  x ", msg, " ", yellow(skip_reason));
+          printf ("%s\n", measure_msgs[i]);
         }
       else
         {
-          const char *msg = CliOpt_InEnglish ? src.mirror->abbr : src.mirror->name;
-          measure_msgs[i] = xy_strjoin (3, "  - ", msg, " ... ");
-          printf ("%s", measure_msgs[i]);
+          const char *msg = CliOpt_InEnglish ? provider->abbr : provider->name;
 
+          if (xy_streql ("upstream", provider->code))
+            {
+              measure_msgs[i] = xy_strjoin (5, "  ^ ", msg, " (", src.url, ") ... ");
+            }
+          else
+            {
+              measure_msgs[i] = xy_strjoin (3, "  - ", msg, " ... ");
+            }
+
+
+          printf ("%s", measure_msgs[i]);
           fflush (stdout);
 
           char *url_ = xy_strdup (url);
-
           char *curl_result = measure_speed_for_url (url_);
           double speed = parse_and_say_curl_result (curl_result);
           speed_records[i] = speed;
@@ -586,18 +654,20 @@ measure_speed_for_every_source (SourceInfo sources[], int size, double speed_rec
 
 /**
  * 自动测速选择镜像站和源
- *
- * @translation Done
  */
 #define auto_select_mirror(s) select_mirror_autoly(s##_sources, s##_sources_n, (char*)#s+3)
 int
-select_mirror_autoly (SourceInfo *sources, size_t size, const char *target_name)
+select_mirror_autoly (Source_t *sources, size_t size, const char *target_name)
 {
-  {
-  char *msg = CliOpt_InEnglish ? "Measuring speed in sequence" : "测速中";
+  /* reset 时选择默认源 */
+  if (ProgMode_CMD_Reset)
+    return 0;
 
-  xy_log_brkt (App_Name, bdpurple (CliOpt_InEnglish ? "MEASURE" : "测速"), msg);
-  say ("");
+  if (!CliOpt_DryRun)
+  {
+    char *msg = CliOpt_InEnglish ? "Measuring speed in sequence" : "测速中";
+    xy_log_brkt (App_Name, bdpurple (CliOpt_InEnglish ? "MEASURE" : "测速"), msg);
+    br();
   }
 
   if (0==size || 1==size)
@@ -605,12 +675,13 @@ select_mirror_autoly (SourceInfo *sources, size_t size, const char *target_name)
       char *msg1 = CliOpt_InEnglish ? "Currently " : "当前 ";
       char *msg2 = CliOpt_InEnglish ? "No any source, please contact maintainers: chsrc issue" : " 无任何可用源，请联系维护者: chsrc issue";
       chsrc_error (xy_strjoin (3, msg1, target_name, msg2));
-      exit (Exit_MatinerIssue);
+      exit (Exit_MaintainerCause);
     }
 
   if (CliOpt_DryRun)
+  /* Dry Run 时，跳过测速 */
     {
-      return 1; // Dry Run 时，跳过测速
+      return 1; /* 原则第一个源 */
     }
 
   bool only_one = false;
@@ -624,12 +695,31 @@ select_mirror_autoly (SourceInfo *sources, size_t size, const char *target_name)
       chsrc_error (msg);
       exit (Exit_UserCause);
     }
+
+  if (xy_on_windows)
+    {
+      char *curl_version = xy_run ("curl --version", 1);
+      /**
+       * https://github.com/RubyMetric/chsrc/issues/144
+       *
+       * Cygwin上，curl 的版本信息为:
+       *
+       *    curl 8.9.1 (x86_64-pc-cygwin)
+       *
+       */
+      if (strstr (curl_version, "pc-cygwin"))
+        {
+          char *msg = CliOpt_InEnglish ? "You're using curl built by Cygwin which has a bug! Please use another curl!" : "你使用的是Cygwin构建的curl，该版本的curl存在bug，请改用其他版本的curl";
+          chsrc_error (msg);
+          exit (Exit_UserCause);
+        }
+    }
   /** --------------------------------------------- */
 
   /* 总测速记录值 */
   double speed_records[size];
   measure_speed_for_every_source (sources, size, speed_records);
-  say ("");
+  br();
 
   /* DEBUG */
   /*
@@ -676,19 +766,19 @@ select_mirror_autoly (SourceInfo *sources, size_t size, const char *target_name)
 
 
 bool
-source_is_upstream (SourceInfo *source)
+source_is_upstream (Source_t *source)
 {
   return xy_streql (source->mirror->code, "upstream");
 }
 
 bool
-source_is_userdefine (SourceInfo *source)
+source_is_userdefine (Source_t *source)
 {
   return xy_streql (source->mirror->code, "user");
 }
 
 bool
-source_has_empty_url (SourceInfo *source)
+source_has_empty_url (Source_t *source)
 {
   return source->url == NULL;
 }
@@ -696,12 +786,12 @@ source_has_empty_url (SourceInfo *source)
 
 
 /**
- * 用户*只可能*通过下面5种方式来换源，无论哪一种都会返回一个 SourceInfo 出来
+ * 用户*只可能*通过下面5种方式来换源，无论哪一种都会返回一个 Source_t 出来
  * option:
- *  1. 用户指定某个 MirrorCode
+ *  1. 用户指定某个 Mirror Code
  *  2. NULL: 用户什么都没指定 (将测速选择最快镜像)
  *  3. 用户给了一个 URL
- *  4. SetsrcType_Reset
+ *  4. ChgType_Reset
  * 选用了Leader target
  *  5. ProgMode_Leader_Selected_Index 将给出所选索引
  *
@@ -719,7 +809,7 @@ source_has_empty_url (SourceInfo *source)
     } \
   else if (is_url (option)) \
     { \
-      SourceInfo __tmp = { &UserDefine, option }; \
+      Source_t __tmp = { &UserDefinedProvider, option }; \
       source = __tmp; \
     } \
   else \
@@ -729,13 +819,13 @@ source_has_empty_url (SourceInfo *source)
     }
 
 #define chsrc_yield_source(for_what) \
-  SourceInfo source; \
+  Source_t source; \
   chsrc_yield_for_the_source(for_what)
 
 
 
+#define hr() say ("--------------------------------");
 
-#define split_between_source_changing_process   puts ("--------------------------------")
 
 /**
  * 用于 _setsrc 函数
@@ -747,9 +837,9 @@ source_has_empty_url (SourceInfo *source)
  */
 #define chsrc_confirm_source confirm_source(&source)
 void
-confirm_source (SourceInfo *source)
+confirm_source (Source_t *source)
 {
-  // 由于实现问题，我们把本应该独立出去的默认上游源，也放在了可以换源的数组中，而且放在第一个
+  // 由于实现问题，我们把本应该独立出去的上游默认源，也放在了可以换源的数组中，而且放在第一个
   // chsrc 已经规避用户使用未实现的 `chsrc reset`
   // 但是某些用户可能摸索着强行使用 chsrc set target upstream，从而执行起该禁用的功能，
   // 之所以禁用，是因为有的 reset 我们并没有实现，我们在这里阻止这些邪恶的用户
@@ -762,9 +852,9 @@ confirm_source (SourceInfo *source)
   else if (source_has_empty_url (source))
     {
       char *msg = CliOpt_InEnglish ? "URL of the source doesn't exist, please report a bug to the dev team" : \
-                                     "该源URL不存在，请向开发团队提交bug";
+                                     "该源URL不存在，请向维护团队提交bug";
       chsrc_error (msg);
-      exit (Exit_FatalBug);
+      exit (Exit_MaintainerCause);
     }
   else
     {
@@ -772,17 +862,12 @@ confirm_source (SourceInfo *source)
       say (xy_strjoin (5, msg, green (source->mirror->abbr), " (", green (source->mirror->code), ")"));
     }
 
-  split_between_source_changing_process;
+  hr();
 }
 
 #define chsrc_yield_source_and_confirm(for_what) chsrc_yield_source(for_what);chsrc_confirm_source
 
 
-#define SetsrcType_Auto     "auto"
-#define SetsrcType_Reset    "reset"
-#define SetsrcType_SemiAuto "semiauto"
-#define SetsrcType_Manual   "manual"
-#define SetsrcType_Untested "untested"
 
 #define MSG_EN_PUBLIC_URL "If the URL you specify is a public service, you are invited to contribute: chsrc issue"
 #define MSG_CN_PUBLIC_URL "若您指定的URL为公有服务，邀您参与贡献: chsrc issue"
@@ -808,16 +893,24 @@ confirm_source (SourceInfo *source)
 #define thank_mirror(msg) chsrc_log(xy_2strjoin(msg,purple(CliOpt_InEnglish?source->mirror->abbr:source->mirror->name)))
 
 /**
- * @param source    可为NULL
- * @param last_word 5种选择：SetsrcType_Auto | SetsrcType_Reset | SetsrcType_SemiAuto | SetsrcType_Manual | SetsrcType_Untested
- * @translation Done
+ * @param source 可为NULL
+ *
+ * @param[g] ProgMode_ChgType
  */
 void
-chsrc_conclude (SourceInfo *source, const char *last_word)
+chsrc_conclude (Source_t *source)
 {
-  split_between_source_changing_process;
+  hr();
 
-  if (xy_streql (SetsrcType_Auto, last_word))
+  // fprintf (stderr, "chsrc: now change type: %d\n", ProgMode_ChgType);
+
+  if (ProgMode_CMD_Reset || ChgType_Reset == ProgMode_ChgType)
+    {
+      // source_is_upstream (source)
+      char *msg = CliOpt_InEnglish ? "Has been reset to the upstream default source" : "已重置为上游默认源";
+      chsrc_log (purple (msg));
+    }
+  else if (ChgType_Auto == ProgMode_ChgType)
     {
       if (source)
         {
@@ -840,13 +933,7 @@ chsrc_conclude (SourceInfo *source, const char *last_word)
           chsrc_log (msg);
         }
     }
-  else if (xy_streql (SetsrcType_Reset, last_word))
-    {
-      // source_is_upstream (source)
-      char *msg = CliOpt_InEnglish ? "Has been reset to the upstream default source" : "已重置为上游默认源";
-      chsrc_log (purple (msg));
-    }
-  else if (xy_streql (SetsrcType_SemiAuto, last_word))
+  else if (ChgType_SemiAuto == ProgMode_ChgType)
     {
       if (source)
         {
@@ -873,7 +960,7 @@ chsrc_conclude (SourceInfo *source, const char *last_word)
       char *msg = CliOpt_InEnglish ? MSG_EN_BETTER : MSG_CN_BETTER;
       chsrc_warn (msg);
     }
-  else if (xy_streql (SetsrcType_Manual, last_word))
+  else if (ChgType_Manual == ProgMode_ChgType)
     {
       if (source)
         {
@@ -898,7 +985,7 @@ chsrc_conclude (SourceInfo *source, const char *last_word)
       char *msg = CliOpt_InEnglish ? MSG_EN_BETTER : MSG_CN_BETTER;
       chsrc_warn (msg);
     }
-  else if (xy_streql (SetsrcType_Untested, last_word))
+  else if (ChgType_Untested == ProgMode_ChgType)
     {
       if (source)
         {
@@ -924,7 +1011,8 @@ chsrc_conclude (SourceInfo *source, const char *last_word)
     }
   else
     {
-      say (last_word);
+      fprintf (stderr, "chsrc: Wrong change type: %d\n", ProgMode_ChgType);
+      xy_unreached();
     }
 }
 
@@ -936,7 +1024,7 @@ chsrc_ensure_root ()
   char *euid = getenv ("$EUID");
   if (NULL==euid)
     {
-      char *buf = xy_run ("id -u", 0, NULL);
+      char *buf = xy_run ("id -u", 0);
       if (0!=atoi(buf)) goto not_root;
       else return;
     }
@@ -963,10 +1051,17 @@ not_root:
 static void
 chsrc_run (const char *cmd, int run_option)
 {
-  if (CliOpt_InEnglish)
-    xy_log_brkt (blue (App_Name), bdblue ("RUN"), blue (cmd));
+  if (ProgMode_Run_as_a_Service)
+    {
+      run_option |= RunOpt_Dont_Notify_On_Success|RunOpt_No_Last_New_Line;
+    }
   else
-    xy_log_brkt (blue (App_Name), bdblue ("运行"), blue (cmd));
+    {
+      if (CliOpt_InEnglish)
+        xy_log_brkt (blue (App_Name), bdblue ("RUN"), blue (cmd));
+      else
+        xy_log_brkt (blue (App_Name), bdblue ("运行"), blue (cmd));
+    }
 
   if (CliOpt_DryRun)
     {
@@ -988,7 +1083,7 @@ chsrc_run (const char *cmd, int run_option)
         {
           char *msg = CliOpt_InEnglish ? "Fatal error, forced end" : "关键错误，强制结束";
           chsrc_error (msg);
-          exit (Exit_FatalUnkownError);
+          exit (Exit_ExternalError);
         }
     }
 
@@ -1000,10 +1095,20 @@ chsrc_run (const char *cmd, int run_option)
 
 
 static void
+chsrc_run_as_a_service (const char *cmd)
+{
+  int run_option = RunOpt_Default;
+  ProgMode_Run_as_a_Service = true;
+    run_option |= RunOpt_Dont_Notify_On_Success|RunOpt_No_Last_New_Line;
+    chsrc_run (cmd, run_option);
+  ProgMode_Run_as_a_Service = false;
+}
+
+static void
 chsrc_view_file (const char *path)
 {
   char *cmd = NULL;
-  path = xy_uniform_path (path);
+  path = xy_normalize_path (path);
   if (xy_on_windows)
     {
       cmd = xy_2strjoin ("type ", path);
@@ -1012,13 +1117,14 @@ chsrc_view_file (const char *path)
     {
       cmd = xy_2strjoin ("cat ", path);
     }
-  chsrc_run (cmd, RunOpt_Dont_Notify_On_Success|RunOpt_No_Last_New_Line);
+
+  chsrc_run_as_a_service (cmd);
 }
 
 static void
 chsrc_ensure_dir (const char *dir)
 {
-  dir = xy_uniform_path (dir);
+  dir = xy_normalize_path (dir);
 
   if (xy_dir_exist (dir))
     {
@@ -1037,18 +1143,53 @@ chsrc_ensure_dir (const char *dir)
     }
   char *cmd = xy_2strjoin (mkdir_cmd, dir);
   cmd = xy_str_to_quietcmd (cmd);
-  chsrc_run (cmd, RunOpt_No_Last_New_Line|RunOpt_Dont_Notify_On_Success);
+
+  chsrc_run_as_a_service (cmd);
+
   char *msg = CliOpt_InEnglish ? "Directory doesn't exist, created automatically " : "目录不存在，已自动创建 ";
   chsrc_note2 (xy_2strjoin (msg, dir));
 }
 
+
 static void
-chsrc_append_to_file (const char *str, const char *file)
+chsrc_append_to_file (const char *str, const char *filename)
 {
-  file = xy_uniform_path (file);
+  if (CliOpt_DryRun)
+    {
+      goto log_anyway;
+    }
+
+  char *file = xy_normalize_path (filename);
   char *dir = xy_parent_dir (file);
   chsrc_ensure_dir (dir);
 
+  FILE *f = fopen (file, "a");
+  if (NULL==f)
+    {
+      char *msg = CliOpt_InEnglish ? xy_2strjoin ("Unable to open file to write: ", file)
+                                   : xy_2strjoin ("无法打开文件以写入: ", file);
+      chsrc_error2 (msg);
+      exit (Exit_UserCause);
+    }
+
+  size_t len = strlen (str);
+
+  size_t ret = fwrite (str, len, 1, f);
+  if (ret != 1)
+    {
+      char *msg = CliOpt_InEnglish ? xy_2strjoin ("Write failed to ", file)
+                                   : xy_2strjoin ("写入文件失败: ", file);
+      chsrc_error2 (msg);
+      exit (Exit_UserCause);
+    }
+
+  fclose (f);
+
+log_anyway:
+  /* 输出recipe指定的文件名 */
+  chsrc_log_write (filename);
+
+  /*
   char *cmd = NULL;
   if (xy_on_windows)
     {
@@ -1058,32 +1199,47 @@ chsrc_append_to_file (const char *str, const char *file)
     {
       cmd = xy_strjoin (4, "echo '", str, "' >> ", file);
     }
-  chsrc_run (cmd, RunOpt_No_Last_New_Line|RunOpt_Dont_Notify_On_Success);
+  chsrc_run_a_service (cmd);
+  */
 }
 
 static void
-chsrc_prepend_to_file (const char *str, const char *file)
+chsrc_prepend_to_file (const char *str, const char *filename)
 {
-  file = xy_uniform_path (file);
+  if (CliOpt_DryRun)
+    {
+      goto log_anyway;
+    }
+
+  char *file = xy_normalize_path (filename);
   char *dir = xy_parent_dir (file);
   chsrc_ensure_dir (dir);
 
   char *cmd = NULL;
   if (xy_on_windows)
     {
-      xy_unimplement;
+      xy_unimplemented();
     }
   else
     {
       cmd = xy_strjoin (4, "sed -i '1i ", str, "' ", file);
     }
-  chsrc_run (cmd, RunOpt_No_Last_New_Line|RunOpt_Dont_Notify_On_Success);
+  chsrc_run_as_a_service (cmd);
+
+log_anyway:
+  /* 输出recipe指定的文件名 */
+  chsrc_log_write (filename);
 }
 
 static void
-chsrc_overwrite_file (const char *str, const char *file)
+chsrc_overwrite_file (const char *str, const char *filename)
 {
-  file = xy_uniform_path (file);
+  if (CliOpt_DryRun)
+    {
+      goto log_anyway;
+    }
+
+  char *file = xy_normalize_path (filename);
   char *dir = xy_parent_dir (file);
   chsrc_ensure_dir (dir);
 
@@ -1096,12 +1252,21 @@ chsrc_overwrite_file (const char *str, const char *file)
     {
       cmd = xy_strjoin (4, "echo '", str, "' > ", file);
     }
-  chsrc_run (cmd, RunOpt_Default);
+  chsrc_run_as_a_service (cmd);
+
+log_anyway:
+  /* 输出recipe指定的文件名 */
+  chsrc_log_write (filename);
 }
 
 static void
 chsrc_backup (const char *path)
 {
+  if (CliOpt_DryRun)
+    {
+      goto log_anyway;
+    }
+
   char *cmd = NULL;
   bool exist = xy_file_exist (path);
 
@@ -1119,18 +1284,38 @@ chsrc_backup (const char *path)
     }
   else if (xy_on_windows)
     {
-      // /Y 表示覆盖
-      cmd = xy_strjoin (5, "copy /Y ", path, " ", path, ".bak" );
+      /**
+       * @note /Y 表示覆盖
+       * @note 默认情况下会输出一个 "已复制  1个文件"
+       */
+      cmd = xy_strjoin (5, "copy /Y ", path, " ", path, ".bak 1>nul");
     }
   else
     {
-      cmd = xy_strjoin (5, "cp ", path, " ", path, ".bak --backup='t'");
+      /**
+       * @see https://github.com/RubyMetric/chsrc/issues/152#issuecomment-2542673273
+       *
+       * busybox cp 会在 stderr 输出 unrecognized option: version
+       * stderr 导入到 stdout，以便我们 xy_run() 可以接受到输出
+       *
+       */
+      char *ver = xy_run ("cp --version 2>&1", 1);
+      /* cp (GNU coreutils) 9.4 */
+      if (strstr (ver, "GNU coreutils"))
+        {
+          cmd = xy_strjoin (5, "cp ", path, " ", path, ".bak --backup='t'");
+        }
+      else
+        {
+          /* 非 GNU 的 cp 可能不支持 --backup ，如 busybox cp */
+          cmd = xy_strjoin (5, "cp -f ", path, " ", path, ".bak");
+        }
     }
 
-  chsrc_run (cmd, RunOpt_No_Last_New_Line|RunOpt_Dont_Notify_On_Success);
-  chsrc_note2 (xy_strjoin (3,
-                            CliOpt_InEnglish ? "Backup file name is " : "备份文件名为 ",
-                            path, ".bak"));
+  chsrc_run_as_a_service (cmd);
+
+log_anyway:
+  chsrc_log_backup (path);
 }
 
 
@@ -1141,6 +1326,7 @@ static char *
 chsrc_get_cpuarch ()
 {
   char *ret;
+  char *msg;
 
 #if XY_On_Windows
   SYSTEM_INFO info;
@@ -1158,10 +1344,11 @@ chsrc_get_cpuarch ()
         ret = "IA-64";  break;
       case PROCESSOR_ARCHITECTURE_UNKNOWN:
       default:
-        char *msg = CliOpt_InEnglish ? "Unable to detect CPU type" : "无法检测到CPU类型";
+        msg = CliOpt_InEnglish ? "Unable to detect CPU type" : "无法检测到CPU类型";
         chsrc_error (msg);
         exit (Exit_UserCause);
     }
+  return ret;
 #else
 
   bool exist;
@@ -1169,19 +1356,19 @@ chsrc_get_cpuarch ()
   exist = chsrc_check_program_quietly ("arch");
   if (exist)
     {
-      ret = xy_run ("arch", 0, NULL);
+      ret = xy_run ("arch", 0);
       return ret;
     }
 
   exist = chsrc_check_program_quietly ("uname");
   if (exist)
     {
-      ret = xy_run ("uname -m", 0, NULL);
+      ret = xy_run ("uname -m", 0);
       return ret;
     }
   else
     {
-      char *msg = CliOpt_InEnglish ? "Unable to detect CPU type" : "无法检测到CPU类型";
+      msg = CliOpt_InEnglish ? "Unable to detect CPU type" : "无法检测到CPU类型";
       chsrc_error (msg);
       exit (Exit_UserCause);
     }

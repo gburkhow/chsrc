@@ -2,23 +2,30 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  * -------------------------------------------------------------
  * File Authors  : Aoran Zeng <ccmywish@qq.com>
- * Contributors  :  Nil Null  <nil@null.org>
+ * Contributors  : Yangmoooo <yangmoooo@outlook.com>
+ *               |
  * Created On    : <2024-10-02>
- * Last Modified : <2024-10-02>
+ * Last Modified : <2024-12-18>
  * ------------------------------------------------------------*/
 
+static SourceProvider_t pl_rust_binary_upstream =
+{
+  def_upstream, "https://www.rust-lang.org/",
+  def_need_measure_info
+};
+
 /**
- * @update 2024-10-02
+ * @update 2024-12-18
  */
-static SourceInfo
-pl_rust_rustup_sources[] = {
-  {&Upstream,      NULL},
-  {&Tuna,          "https://mirrors.tuna.tsinghua.edu.cn/rustup"},
-  {&Ustc,          "https://mirrors.ustc.edu.cn/rust-static"},
-  {&Sjtug_Zhiyuan, "https://mirror.sjtu.edu.cn/rust-static"},
-  {&Zju,           "https://mirrors.zju.edu.cn/rustup"},
-  {&Iscas,         "https://mirror.iscas.ac.cn/rustup"},
-  {&RsProxyCN,    "https://rsproxy.cn"}
+static Source_t pl_rust_rustup_sources[] =
+{
+  {&pl_rust_binary_upstream, "https://static.rust-lang.org"},
+  {&Tuna,             "https://mirrors.tuna.tsinghua.edu.cn/rustup"},
+  {&Ustc,             "https://mirrors.ustc.edu.cn/rust-static"},
+  {&Sjtug_Zhiyuan,    "https://mirror.sjtu.edu.cn/rust-static"},
+  {&Zju,              "https://mirrors.zju.edu.cn/rustup"},
+  {&Iscas,            "https://mirror.iscas.ac.cn/rustup"},
+  {&RsProxyCN,        "https://rsproxy.cn"}
 };
 def_sources_n(pl_rust_rustup);
 
@@ -44,42 +51,41 @@ pl_rust_rustup_getsrc (char *option)
 void
 pl_rust_rustup_setsrc (char *option)
 {
-  char *setsrc_type = xy_streql (option, SetsrcType_Reset) ? SetsrcType_Reset : SetsrcType_Auto;
-
   chsrc_yield_source_and_confirm (pl_rust_rustup);
 
-  char *dist_server = xy_strjoin (3, "export RUSTUP_DIST_SERVER=\"", source.url, "\"");
-  char *update_root = xy_strjoin (3, "export RUSTUP_UPDATE_ROOT=\"", source.url, "/rustup\"");
+  char *w1 = xy_strjoin (3, "export RUSTUP_DIST_SERVER=\"", source.url, "\"\n");
+  char *w2 = xy_strjoin (3, "export RUSTUP_UPDATE_ROOT=\"", source.url, "/rustup\"\n");
 
-  char *bashrc = "~/.bashrc";
+  char *w = xy_2strjoin (w1, w2);
+
+  char *bashrc = xy_bashrc;
   if (xy_file_exist (bashrc))
     {
       chsrc_backup (bashrc);
-      chsrc_append_to_file (dist_server, bashrc);
-      chsrc_append_to_file (update_root, bashrc);
+      chsrc_append_to_file (w, bashrc);
     }
 
-  char *zshrc = "~/.zshrc";
+  char *zshrc = xy_zshrc;
   if (xy_file_exist (zshrc))
     {
       chsrc_backup (zshrc);
-      chsrc_append_to_file (dist_server, zshrc);
-      chsrc_append_to_file (update_root, zshrc);
+      chsrc_append_to_file (w, zshrc);
     }
 
-  char *fishrc = "~/.config/fish/config.fish";
+  char *fishrc = xy_fishrc;
   if (xy_file_exist (fishrc))
     {
-      char *dist_server = xy_2strjoin ("set -x  RUSTUP_DIST_SERVER ", source.url);
-      char *update_root = xy_2strjoin ("set -x  RUSTUP_UPDATE_ROOT ", xy_2strjoin (source.url, "/rustup"));
+      char *w1 = xy_strjoin (3, "set -x RUSTUP_DIST_SERVER ", source.url, "\n");
+      char *w2 = xy_strjoin (3, "set -x RUSTUP_UPDATE_ROOT ", source.url, "/rustup\n");
+
+      char *w = xy_2strjoin (w1, w2);
 
       chsrc_backup (fishrc);
-      chsrc_append_to_file (dist_server, fishrc);
-      chsrc_append_to_file (update_root, fishrc);
+      chsrc_append_to_file (w, fishrc);
     }
 
-
-  chsrc_conclude (&source, setsrc_type);
+  ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+  chsrc_conclude (&source);
   chsrc_note2 ("请您重启终端使rustup环境变量生效");
 }
 
@@ -90,28 +96,28 @@ pl_rust_rustup_setsrc (char *option)
 void
 pl_rust_rustup_resetsrc (char *option)
 {
-  pl_rust_rustup_setsrc (SetsrcType_Reset);
+  pl_rust_rustup_setsrc (option);
 }
 
 
 /**
  * chsrc ls rustup
  */
-FeatInfo
+Feature_t
 pl_rust_rustup_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = false;
+  f.can_get = true;
+  f.can_reset = false;
 
-  fi.stcan_locally = CanNot;
-  fi.locally = "";
-  fi.can_english = false;
-  fi.can_user_define = true;
+  f.cap_locally = CanNot;
+  f.cap_locally_explain = "";
+  f.can_english = false;
+  f.can_user_define = true;
 
-  fi.note = NULL;
-  return fi;
+  f.note = NULL;
+  return f;
 }
 
 

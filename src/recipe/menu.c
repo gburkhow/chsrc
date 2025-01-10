@@ -5,7 +5,7 @@
  * Contributors   :  Nil Null  <nil@null.org>
  * Created On     : <2023-09-01>
  * Major Revision :      1
- * Last Modified  : <2024-10-02>
+ * Last Modified  : <2024-12-11>
  * ------------------------------------------------------------*/
 
 /* Begin Target Matrix */
@@ -17,6 +17,8 @@ static const char
   *pl_python_pip[]    = {"pip",                    NULL, t(&pl_python_pip_target)},
   *pl_python_poetry[] = {"poetry",                 NULL, t(&pl_python_poetry_target)},
   *pl_python_pdm[]    = {"pdm",                    NULL, t(&pl_python_pdm_target)},
+  *pl_python_rye[]    = {"rye",                    NULL, t(&pl_python_rye_target)},
+  *pl_python_uv[]     = {"uv",                     NULL, t(&pl_python_uv_target)},
 
 *pl_nodejs[]        = {"node", "nodejs", NULL, t(&pl_nodejs_target)},
 *pl_nodejs_bun[]    = {"bun",            NULL, t(&pl_nodejs_bun_target)},
@@ -47,7 +49,7 @@ static const char
 **pl_packagers[] =
 {
   pl_ruby,
-  pl_python,  pl_python_pip, pl_python_poetry, pl_python_pdm,
+  pl_python,  pl_python_pip, pl_python_poetry, pl_python_pdm, pl_python_rye, pl_python_uv,
   pl_nodejs,  pl_nodejs_bun,
               pl_nodejs_npm, pl_nodejs_pnpm,   pl_nodejs_yarn,
               pl_nodejs_nvm,
@@ -79,7 +81,7 @@ static const char
 *os_rockylinux [] = {"rocky",  "rockylinux", NULL,  t(&os_rockylinux_target)},
 *os_almalinux  [] = {"alma",   "almalinux",  NULL,  t(&os_almalinux_target)},
 *os_alpine     [] = {"alpine",               NULL,  t(&os_alpine_target)},
-*os_void       [] = {"void",   "voidlinux",  NULL,  t(&os_void_target)},
+*os_voidlinux  [] = {"void",   "voidlinux",  NULL,  t(&os_voidlinux_target)},
 *os_solus      [] = {"solus",                NULL,  t(&os_solus_target)},
 *os_trisquel   [] = {"trisquel",             NULL,  t(&os_trisquel_target)},
 *os_linuxlite  [] = {"lite",   "linuxlite",  NULL,  t(&os_linuxlite_target)},
@@ -110,7 +112,7 @@ static const char
 
   os_arch,    os_archlinuxcn, os_manjaro, os_gentoo,
 
-  os_alpine,   os_void,      os_solus,
+  os_alpine,   os_voidlinux,  os_solus,
 
   os_msys2,
   os_freebsd,  os_netbsd,    os_openbsd,
@@ -135,15 +137,36 @@ static const char
 #undef t
 
 
-static MirrorSite*
+/**
+ * @sync https://github.com/RubyMetric/chsrc/wiki
+ */
+static MirrorSite_t*
 available_mirrors[] = {
-  &MirrorZ, &Tuna, &Sjtug_Zhiyuan, &Zju, &Lzuoss, &Jlu, &Bfsu, &Pku, &Bjtu, &Sustech, &Ustc, &Hust, &Nju, // &Cqu,
-  &Ali, // &Ali_ECS_VPC, &Ali_ECS_classic,
+
+  /* 教育网 */
+  &MirrorZ, &Tuna, &Sjtug_Zhiyuan, &Zju, &Lzuoss, &Jlu, &Bfsu, &Pku, &Bjtu, &Sustech, &Ustc,
+
+  &Hust, &Iscas, &Scau, &Nju,
+
+  // 已支持但未启用
+  // &Cqu,
+
+  /* 大型公司 */
+  &Ali,     // &Ali_ECS_VPC, &Ali_ECS_classic,
   &Tencent, // &Tencent_Intra,
-  &Huawei, &Volcengine,  &Netease, &Sohu, &Api7, &Fit2Cloud,
-  &RubyChina, &EmacsChina, &NpmMirror, &GoProxyCN, &GoProxyIO,
+  &Huawei,
+  &Volcengine,
+  &Netease,
+  &Sohu,
+
+  /* 公司 */
+  &Api7, &Fit2Cloud, &DaoCloud,
+
+  /* 专用镜像站 */
+  &RubyChina, &EmacsChina, &NpmMirror, &GoProxyIO, &GoProxyCN, &RsProxyCN,
+
   // 暂不支持 &NugetOrg
-  // 不要列出 &Upstream 和 &UserDdefine
+  // 不要列出 &UpstreamProvider 和 &UserDefinedProvider
 };
 
 /* End Target Matrix */

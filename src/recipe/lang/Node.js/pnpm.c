@@ -27,7 +27,7 @@ pl_nodejs_pnpm_getsrc (char *option)
 void
 pl_nodejs_pnpm_setsrc (char *option)
 {
-  SourceInfo source;
+  Source_t source;
   chsrc_yield_for_the_source (pl_nodejs);
   if (ProgMode_Target_Group!=true)
     chsrc_confirm_source;
@@ -42,7 +42,10 @@ pl_nodejs_pnpm_setsrc (char *option)
   chsrc_run (cmd, RunOpt_No_Last_New_Line);
 
   if (ProgMode_Target_Group!=true)
-    chsrc_conclude (&source, SetsrcType_Auto);
+    {
+      ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+      chsrc_conclude (&source);
+    }
 }
 
 
@@ -52,30 +55,30 @@ pl_nodejs_pnpm_setsrc (char *option)
 void
 pl_nodejs_pnpm_resetsrc (char *option)
 {
-  pl_nodejs_pnpm_setsrc (SetsrcType_Reset);
+  pl_nodejs_pnpm_setsrc (option);
 }
 
 
 /**
  * chsrc ls pnpm
  */
-FeatInfo
+Feature_t
 pl_nodejs_pnpm_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = true;
+  f.can_get = true;
+  f.can_reset = true;
 
-  fi.stcan_locally = CanFully;
-  fi.locally = NULL;
-  fi.can_english = true;
-  fi.can_user_define = true;
+  f.cap_locally = FullyCan;
+  f.cap_locally_explain = NULL;
+  f.can_english = true;
+  f.can_user_define = true;
 
-  fi.note = NULL;
-  return fi;
+  f.note = NULL;
+  return f;
 }
 
 
 // def_target_gsrf(pl_nodejs_pnpm);
-TargetInfo pl_nodejs_pnpm_target = {def_target_inner_gsrf(pl_nodejs_pnpm),def_target_sourcesn(pl_nodejs)};
+Target_t pl_nodejs_pnpm_target = {def_target_inner_gsrf(pl_nodejs_pnpm),def_target_sourcesn(pl_nodejs)};

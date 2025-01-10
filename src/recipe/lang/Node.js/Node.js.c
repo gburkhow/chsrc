@@ -3,9 +3,10 @@
  * -------------------------------------------------------------
  * File Authors   : Aoran Zeng <ccmywish@qq.com>
  * Contributors   :  Mr. Will  <mr.will.com@outlook.com>
+ *                |
  * Created On     : <2023-08-30>
  * Major Revision :      2
- * Last Modified  : <2024-09-13>
+ * Last Modified  : <2024-11-08>
  * ------------------------------------------------------------*/
 
 void
@@ -34,24 +35,24 @@ pl_nodejs_getsrc (char *option)
   bool npm_exist, yarn_exist, pnpm_exist;
   pl_nodejs_check_cmd (&npm_exist, &yarn_exist, &pnpm_exist);
 
-  split_between_source_changing_process;
+  hr();
 
   if (npm_exist)
     {
       pl_nodejs_npm_getsrc (option);
-      say ("");
+      br();
     }
 
   if (yarn_exist)
     {
       pl_nodejs_yarn_getsrc (option);
-      say ("");
+      br();
     }
 
   if (pnpm_exist)
     {
       pl_nodejs_pnpm_getsrc (option);
-      say ("");
+      br();
     }
 }
 
@@ -64,9 +65,9 @@ pl_nodejs_setsrc (char *option)
 {
   {
     char *msg = CliOpt_InEnglish ? "Three package managers will be replaced for you at the same time: " \
-                                         "npm, pnpm, yarn. If you need to change the source independently, " \
-                                         "please run independently `chsrc set <pkg-manager>`"
-                                       : "将同时为您更换3个包管理器 npm, pnpm, Yarn 的源，若需要独立换源，请独立运行 chsrc set <pkg-manager>";
+                                   "npm, pnpm, yarn. If you need to change the source independently, " \
+                                   "please run independently `chsrc set <pkg-manager>`"
+                                 : "将同时为您更换3个包管理器 npm, pnpm, Yarn 的源，若需要独立换源，请独立运行 chsrc set <pkg-manager>";
     chsrc_note2 (msg);
   }
 
@@ -79,13 +80,13 @@ pl_nodejs_setsrc (char *option)
   if (npm_exist)
     {
       pl_nodejs_npm_setsrc (option);
-      say ("");
+      br();
     }
 
   if (yarn_exist)
     {
       pl_nodejs_yarn_setsrc (option);
-      say ("");
+      br();
     }
 
   if (pnpm_exist)
@@ -93,7 +94,8 @@ pl_nodejs_setsrc (char *option)
       pl_nodejs_pnpm_setsrc (option);
     }
 
-  chsrc_conclude (&source, SetsrcType_Auto);
+  ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+  chsrc_conclude (&source);
 }
 
 
@@ -103,27 +105,27 @@ pl_nodejs_setsrc (char *option)
 void
 pl_nodejs_resetsrc (char *option)
 {
-  pl_nodejs_setsrc (SetsrcType_Reset);
+  pl_nodejs_setsrc (option);
 }
 
 
 /**
  * chsrc ls nodejs
  */
-FeatInfo
+Feature_t
 pl_nodejs_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = true;
+  f.can_get = true;
+  f.can_reset = true;
 
-  fi.stcan_locally = CanFully;
-  fi.locally = "Support npm (chsrc v0.1.7)\nSupport yarn v2 (chsrc v0.1.8.1)\nSupport pnpm (chsrc v0.1.8.2)";
-  fi.can_english = true;
-  fi.can_user_define = true;
+  f.cap_locally = FullyCan;
+  f.cap_locally_explain = "Support `npm` & `yarn v2` & `pnpm`. No support for `yarn v1`";
+  f.can_english = true;
+  f.can_user_define = true;
 
-  return fi;
+  return f;
 }
 
 def_target_gsrf (pl_nodejs);

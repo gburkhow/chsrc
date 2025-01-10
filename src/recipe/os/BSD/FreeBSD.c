@@ -9,19 +9,19 @@
  * ------------------------------------------------------------*/
 
 /**
- * @time 2023-09-27 更新
+ * @update 2023-09-27
  *
- * @note by:ccmywish {
- *   [2023-09-24] 以下三个USTC, NJU, Netease 均维护了 freebsd-pkg freebsd-ports
- *   [2023-09-27] 请务必保持Nju前面有至少一个镜像，原因请查看 freebsd 的换源函数
+ * @note {
+ *   2023-09-24: 以下三个USTC, NJU, Netease 均维护了 freebsd-pkg freebsd-ports
+ *   2023-09-27: 请务必保持Nju前面有至少一个镜像，原因请查看 freebsd 的换源函数
  * }
  */
-static SourceInfo
-os_freebsd_sources[] = {
-  {&Upstream,       NULL},
-  {&Ustc,           "mirrors.ustc.edu.cn"},
-  {&Nju,            "mirror.nju.edu.cn"},
-  {&Netease,        "mirrors.163.com"},
+static Source_t os_freebsd_sources[] =
+{
+  {&UpstreamProvider,  NULL},
+  {&Ustc,             "mirrors.ustc.edu.cn"},
+  {&Nju,              "mirror.nju.edu.cn"},
+  {&Netease,          "mirrors.163.com"},
 };
 def_sources_n(os_freebsd);
 
@@ -41,7 +41,7 @@ os_freebsd_setsrc (char *option)
 
   int index = use_specific_mirror_or_auto_select (option, os_freebsd);
 
-  SourceInfo source = os_freebsd_sources[index];
+  Source_t source = os_freebsd_sources[index];
   chsrc_confirm_source;
 
   chsrc_log2 ("1. 添加 freebsd-pkg 源 (二进制安装包)");
@@ -95,7 +95,7 @@ os_freebsd_setsrc (char *option)
   // https://help.mirrors.cernet.edu.cn/FreeBSD-ports/
   chsrc_backup ("/etc/make.conf");
 
-  char *ports = xy_strjoin (3, "MASTER_SITE_OVERRIDE?=http://", source.url, "/freebsd-ports/distfiles/${DIST_SUBDIR}/");
+  char *ports = xy_strjoin (3, "MASTER_SITE_OVERRIDE?=http://", source.url, "/freebsd-ports/distfiles/${DIST_SUBDIR}/\n");
   chsrc_append_to_file (ports, "/etc/make.conf");
 
 
@@ -128,7 +128,8 @@ os_freebsd_setsrc (char *option)
     chsrc_overwrite_file (update, "/etc/freebsd-update.conf");
   */
 
-  chsrc_conclude (&source, SetsrcType_SemiAuto);
+  ProgMode_ChgType = ChgType_SemiAuto;
+  chsrc_conclude (&source);
 }
 
 def_target_s(os_freebsd);

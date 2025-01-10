@@ -2,23 +2,24 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  * -------------------------------------------------------------
  * File Authors   : Aoran Zeng <ccmywish@qq.com>
- * Contributors   :  Nil Null  <nil@null.org>
+ * Contributors   :    czyt    <czyt.go@gmail.com>
+ *                |
  * Created On     : <2023-09-10>
  * Major Revision :      3
- * Last Modified  : <2024-09-14>
+ * Last Modified  : <2024-10-31>
  *
  * Dart Pub 软件仓库
  * ------------------------------------------------------------*/
 
 /**
- * @update 2024-09-14
+ * @update 2024-10-31
  */
-static SourceInfo
-pl_dart_sources[] = {
-  {&Upstream,       NULL},
-  {&Sjtug_Zhiyuan, "https://mirror.sjtu.edu.cn/dart-pub"},
-  {&Tuna,          "https://mirrors.tuna.tsinghua.edu.cn/dart-pub"},
-  {&Nju,           "https://mirror.nju.edu.cn/dart-pub"}
+static Source_t pl_dart_sources[] =
+{
+  {&UpstreamProvider, "https://pub.dev"},
+  {&Sjtug_Zhiyuan,    "https://mirror.sjtu.edu.cn/dart-pub"},
+  {&Tuna,             "https://mirrors.tuna.tsinghua.edu.cn/dart-pub"},
+  {&Nju,              "https://mirror.nju.edu.cn/dart-pub"}
 };
 def_sources_n(pl_dart);
 
@@ -50,54 +51,63 @@ pl_dart_setsrc (char *option)
 {
   chsrc_yield_source_and_confirm (pl_dart);
 
-  char *towrite = NULL;
+  char *w = NULL;
 
   if (xy_on_windows)
     {
-      towrite = xy_strjoin (3, "$env:PUB_HOSTED_URL = \"", source.url, "\"");
+      w = xy_strjoin (3, "$env:PUB_HOSTED_URL = \"", source.url, "\"\n");
 
       if (xy_file_exist (xy_win_powershell_profile))
-        chsrc_append_to_file (towrite, xy_win_powershell_profile);
+        chsrc_append_to_file (w, xy_win_powershell_profile);
 
       if (xy_file_exist (xy_win_powershellv5_profile))
-        chsrc_append_to_file (towrite, xy_win_powershellv5_profile);
+        chsrc_append_to_file (w, xy_win_powershellv5_profile);
     }
   else
     {
-      char *zshrc  = "~/.zshrc";
-      char *bashrc = "~/.bashrc";
+      char *zshrc  = xy_zshrc;
+      char *bashrc = xy_bashrc;
 
       chsrc_backup (zshrc);
-      towrite = xy_strjoin (3, "export PUB_HOSTED_URL=\"", source.url, "\"");
+      w = xy_strjoin (3, "export PUB_HOSTED_URL=\"", source.url, "\"\n");
 
-      chsrc_append_to_file (towrite, zshrc);
+      chsrc_append_to_file (w, zshrc);
 
       if (xy_file_exist (bashrc))
         {
           chsrc_backup (bashrc);
-          chsrc_append_to_file (towrite, bashrc);
+          chsrc_append_to_file (w, bashrc);
         }
     }
-  chsrc_conclude (&source, SetsrcType_Auto);
+
+  ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+  chsrc_conclude (&source);
 }
 
 
-FeatInfo
+void
+pl_dart_resetsrc (char *option)
+{
+  pl_dart_setsrc (option);
+}
+
+
+Feature_t
 pl_dart_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = false;
+  f.can_get = true;
+  f.can_reset = true;
 
-  fi.stcan_locally = CanNot;
-  fi.locally = NULL;
-  fi.can_english = true;
+  f.cap_locally = CanNot;
+  f.cap_locally_explain = NULL;
+  f.can_english = true;
 
-  fi.can_user_define = true;
+  f.can_user_define = true;
 
-  fi.note = "该换源通过写入环境变量实现，若多次换源，请手动清理profile文件";
-  return fi;
+  f.note = "该换源通过写入环境变量实现，若多次换源，请手动清理profile文件";
+  return f;
 }
 
-def_target_gsf(pl_dart);
+def_target_gsrf(pl_dart);

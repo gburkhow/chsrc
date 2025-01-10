@@ -32,17 +32,18 @@ pl_nodejs_nvm_setsrc (char *option)
 {
   chsrc_yield_source_and_confirm (pl_nodejs_binary_release);
 
-  char *env = xy_2strjoin ("export NVM_NODEJS_ORG_MIRROR=", source.url);
+  char *w = xy_strjoin (3, "export NVM_NODEJS_ORG_MIRROR=", source.url, "\n");
 
-  char *zshrc  = "~/.zshrc";
-  char *bashrc = "~/.bashrc";
+  char *zshrc  = xy_zshrc;
+  char *bashrc = xy_bashrc;
 
-  chsrc_append_to_file (env, bashrc);
+  chsrc_append_to_file (w, bashrc);
 
   if (xy_file_exist (zshrc))
-    chsrc_append_to_file (env, zshrc);
+    chsrc_append_to_file (w, zshrc);
 
-  chsrc_conclude (&source, SetsrcType_Auto);
+  ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+  chsrc_conclude (&source);
 }
 
 
@@ -52,7 +53,7 @@ pl_nodejs_nvm_setsrc (char *option)
 void
 pl_nodejs_nvm_resetsrc (char *option)
 {
-  // pl_nodejs_nvm_setsrc (SetsrcType_Reset);
+  // pl_nodejs_nvm_setsrc (ChgType_Reset);
   chsrc_error ("暂不支持对 nvm 重置");
   exit (Exit_Unsupported);
 }
@@ -61,22 +62,22 @@ pl_nodejs_nvm_resetsrc (char *option)
 /**
  * chsrc ls nvm
  */
-FeatInfo
+Feature_t
 pl_nodejs_nvm_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = false;
+  f.can_get = true;
+  f.can_reset = false;
 
-  fi.stcan_locally = CanNot;
-  fi.locally = "";
-  fi.can_english = false;
-  fi.can_user_define = true;
+  f.cap_locally = CanNot;
+  f.cap_locally_explain = "";
+  f.can_english = false;
+  f.can_user_define = true;
 
-  fi.note = NULL;
-  return fi;
+  f.note = NULL;
+  return f;
 }
 
 // def_target_gsrf(pl_nodejs_nvm);
-TargetInfo pl_nodejs_nvm_target = {def_target_inner_gsrf(pl_nodejs_nvm),def_target_sourcesn(pl_nodejs_binary_release)};
+Target_t pl_nodejs_nvm_target = {def_target_inner_gsrf(pl_nodejs_nvm),def_target_sourcesn(pl_nodejs_binary_release)};

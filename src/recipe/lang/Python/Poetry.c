@@ -27,7 +27,7 @@ pl_python_poetry_getsrc (char *option)
 void
 pl_python_poetry_setsrc (char *option)
 {
-  SourceInfo source;
+  Source_t source;
   chsrc_yield_for_the_source (pl_python);
   if (ProgMode_Target_Group!=true)
     chsrc_confirm_source;
@@ -41,7 +41,10 @@ pl_python_poetry_setsrc (char *option)
   chsrc_run (cmd, RunOpt_No_Last_New_Line);
 
   if (ProgMode_Target_Group!=true)
-    chsrc_conclude (&source, SetsrcType_Auto);
+    {
+      ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+      chsrc_conclude (&source);
+    }
 }
 
 
@@ -51,29 +54,29 @@ pl_python_poetry_setsrc (char *option)
 void
 pl_python_poetry_resetsrc (char *option)
 {
-  pl_python_poetry_setsrc (SetsrcType_Reset);
+  pl_python_poetry_setsrc (option);
 }
 
 
 /**
  * chsrc ls poetry
  */
-FeatInfo
+Feature_t
 pl_python_poetry_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = true;
+  f.can_get = true;
+  f.can_reset = true;
 
-  fi.stcan_locally = CanFully;
-  fi.locally = NULL;
-  fi.can_english = false;
-  fi.can_user_define = true;
+  f.cap_locally = FullyCan;
+  f.cap_locally_explain = NULL;
+  f.can_english = false;
+  f.can_user_define = true;
 
-  fi.note = NULL;
-  return fi;
+  f.note = NULL;
+  return f;
 }
 
 // def_target_gsrf(pl_python_poetry);
-TargetInfo pl_python_poetry_target = {def_target_inner_gsrf(pl_python_poetry),def_target_sourcesn(pl_python)};
+Target_t pl_python_poetry_target = {def_target_inner_gsrf(pl_python_poetry),def_target_sourcesn(pl_python)};

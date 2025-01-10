@@ -23,33 +23,61 @@
 
 <br>
 
-## 🤝 贡献
+## 🤝 协作与贡献
 
 > [!TIP]
-> **`chsrc` 不仅是一个命令行工具，同时也是一个换源框架，它甚至使你能够在不了解C语言的情况下编写出新的换源方法(recipe)。**
+> **`chsrc` 不仅是一个命令行工具，同时也是一个换源框架，它甚至使你能够在不了解C语言的情况下编写出新的换源方法(recipe)。** 给新软件添加换源方法总共分几步？[Write A Recipe Even If You Don't Know C](./doc/02-Write-A-Recipe-Even-If-You-Dont-Know-C.md)
 
-立刻为一个新软件添加换源方法！[Write A Recipe Even If You Don't Know C](./doc/Write-A-Recipe-Even-If-You-Dont-Know-C.md)
+> [!NOTE]
+> **`chsrc` 可换源 60+ 目标。每个人仅仅贡献和维护自己熟悉的部分，回报是得到其他所有领域专家的帮助**。欢迎对 GitHub、Gitee 协作不熟悉的人以此为契机学习参与贡献, 欢迎任何编程初学者参与贡献。[从开发到提交贡献，我们覆盖全流程文档](./doc/)
+，另外作者可提供一定的 [贡献指导](https://github.com/RubyMetric/chsrc/discussions/50)
 
-- 案例：[Armbian](./src/recipe/os/APT/Armbian.c)
-- 挑战：[CentOS (Stream) Recipe Challenge!](https://github.com/RubyMetric/chsrc/issues/48)
+> [!IMPORTANT]
+> [招募 recipe 维护者](https://github.com/RubyMetric/chsrc/issues/130)
 
 <br>
 
-📝 持续关注镜像站可用性的协作:
+可参与的任务与挑战：
+
+1. [提供默认源地址，如Maven等的默认源URL，帮助我们进行 `chsrc reset`](https://github.com/RubyMetric/chsrc/issues/111)
+
+2. [CentOS (Stream) Recipe](https://github.com/RubyMetric/chsrc/issues/48)
+
+<br>
+
+<details>
+<summary>已由贡献者完成的挑战</summary>
+
+1. [[Challenge] 编写统一安装的 shell 和 PowerShell 脚本](https://github.com/RubyMetric/chsrc/issues/98)
+
+    已由 [@Efterklang] 与 [@wickdynex] 完成
+
+</details>
+
+
+<details>
+<summary>镜像站可用性</summary>
 
 1. https://github.com/RubyMetric/chsrc/wiki
 2. https://github.com/RubyMetric/chsrc/discussions
 
-<br>
+</details>
+
+
+<details>
+<summary>打包</summary>
 
 想通过 `flatpak`,`snap`,`pacman`,`apt`,`dnf` 等系统包管理工具来安装和更新`chsrc`？若您可提供维护，请访问 [issue#16 on GitHub](https://github.com/RubyMetric/chsrc/issues/16)
 
 - [x] `Homebrew`
 - [x] `Scoop`
+- [x] `WinGet`
 - [x] `AUR`
 - [ ] `Flatpak`
 - [ ] `snap`
 - [ ] 缺乏其他平台/包维护者
+
+</details>
 
 <br>
 
@@ -64,7 +92,7 @@
 ## 🚀 安装
 
 <a href="https://repology.org/project/chsrc/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/chsrc.svg" alt="Packaging status" align="right">
+  <img src="https://repology.org/badge/vertical-allrepos/chsrc.svg" alt="Packaging status" align="right">
 </a>
 
 > [!IMPORTANT]
@@ -73,11 +101,31 @@
 <details>
 <summary>Windows</summary>
 
-- 可通过 `scoop` 安装，感谢 [@Gn3po4g](https://github.com/Gn3po4g) 与 [@niheaven](https://github.com/niheaven)
+- 可通过 `scoop` 安装，感谢 [@Gn3po4g] 与 [@niheaven]
 
 ```bash
 $ scoop install chsrc
 ```
+
+<br>
+
+- 可通过 `WinGet` 安装，感谢 [@YU-7]
+
+```bash
+$ winget install RubyMetric.chsrc
+```
+
+<br>
+
+- 可通过 `PowerShell` 脚本一键下载最新版二进制文件，感谢 [@wickdynex]
+
+    若下方链接无法访问，可使用 `https://gitee.com/RubyMetric/chsrc/raw/main/tool/installer.ps1` 替代
+
+```PowerShell
+"& { $(iwr -useb https://chsrc.run/windows) } -Version pre" | iex
+```
+
+<br>
 
 - 或手动下载二进制文件，这是最新版，往往比 `scoop` 提供的更新，适用于修复 Bug、添加新功能后及时使用，以及未安装 `scoop` 时
 
@@ -93,7 +141,7 @@ curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-x86-windo
 <details>
 <summary>Linux</summary>
 
-- 支持 `AUR`，可通过 `yay` 安装，感谢 [@Jerry-Terrasse](https://github.com/Jerry-Terrasse)
+- 支持 `AUR`，可通过 `yay` 安装，感谢 [@Jerry-Terrasse]
 
 ```bash
 # AUR
@@ -102,7 +150,29 @@ $ yay -S chsrc-git # Build  from the latest main branch (stable)
 $ yay -S chsrc     # Build  from GitHub Release
 ```
 
-- 手动下载二进制文件安装
+<br>
+
+- 可通过 `shell` 脚本一键安装最新版，感谢 [@Efterklang] 与 [@wickdynex]
+
+    若下方链接无法访问，可使用 `https://gitee.com/RubyMetric/chsrc/raw/main/tool/installer.sh` 替代
+
+```bash
+# 非root用户默认安装至 ~/.local/bin
+$ curl https://chsrc.run/posix | bash
+
+# root用户默认安装至 /usr/local/bin
+$ curl https://chsrc.run/posix | sudo bash
+
+# 使用 -d 指定目录安装
+$ curl https://chsrc.run/posix | bash -s -- -d ./
+
+# 使用 -l en 输出英文
+$ curl https://chsrc.run/posix | bash -s -- -l en
+```
+
+<br>
+
+- 可手动下载二进制文件安装
 
 ```bash
 # x64
@@ -123,16 +193,38 @@ curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-armv7-lin
 <details>
 <summary>macOS</summary>
 
-- 可通过 `homebrew` 安装，感谢 [@Aaron-212](https://github.com/Aaron-212) 与 [@chenrui333](https://github.com/chenrui333)
+- 可通过 `homebrew` 安装，感谢 [@Aaron-212] 与 [@chenrui333]
 
 ```bash
 $ brew install chsrc
 ```
 
+<br>
+
+- 可通过 `shell` 脚本安装最新版，感谢 [@Efterklang] 与 [@wickdynex]
+
+    若下方链接无法访问，可使用 `https://gitee.com/RubyMetric/chsrc/raw/main/tool/installer.sh` 替代
+
+```bash
+# 非root用户默认安装至 ~/.local/bin
+$ curl https://chsrc.run/posix | bash
+
+# root用户默认安装至 /usr/local/bin
+$ curl https://chsrc.run/posix | sudo bash
+
+# 使用 -d 指定目录安装
+$ curl https://chsrc.run/posix | bash -s -- -d ./
+
+# 使用 -l en 输出英文
+$ curl https://chsrc.run/posix | bash -s -- -l en
+```
+
+<br>
+
 - 或手动下载二进制文件，这是最新版，往往比 `homebrew` 提供的更新，适用于修复 Bug、添加新功能后及时使用
 
 ```bash
-# arm/aarch64
+# arm64/aarch64
 curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-aarch64-macos -o chsrc; chmod +x ./chsrc
 
 # x64
@@ -145,7 +237,7 @@ curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-x64-macos
 
 ```bash
 $ git clone https://gitee.com/RubyMetric/chsrc.git; cd chsrc
-$ clang -Iinclude src/chsrc-main.c -o chsrc
+$ clang -Iinclude -Ilib src/chsrc-main.c -o chsrc
 ```
 </details>
 
@@ -153,7 +245,7 @@ $ clang -Iinclude src/chsrc-main.c -o chsrc
 <summary>其他平台</summary>
 
 ```bash
-$ git clone https://gitee.com/RubyMetric/chsrc.git; cd chsrc; gmake
+$ git clone https://gitee.com/RubyMetric/chsrc.git; cd chsrc; make
 ```
 </details>
 
@@ -224,10 +316,13 @@ reset <target>            # 重置，使用上游默认使用的源
 ```bash
 chsrc set ruby|rb|gem|bundler|rubygems
 
-chsrc set python | py | pypi # 同时换 pip, poetry 和 pdm 这3个包管理器，也可以3个独立换源
+chsrc set python | py | pypi # 同时换 pip, poetry, pdm, uv 这4个包管理器，也可以4个独立换源
   chsrc set pip
   chsrc set poetry
   chsrc set pdm
+  chsrc set uv
+
+chsrc set rye
 
 chsrc set node | nodejs # 同时换 npm, yarn 和 pnpm 这3个包管理器，也可以3个独立换源
   chsrc set npm
@@ -316,25 +411,6 @@ chsrc set conda  | anaconda
 
 <br>
 
-## 🛠️ 开发
-
-请安装好 `gcc`或`clang` 和 `make` 以及 `curl`
-
-```bash
-# 使用 dev 分支开发
-git clone https://gitee.com/RubyMetric/chsrc.git -b dev
-
-make          # 默认使用 cc 编译
-make CC=clang # 使用 clang 编译
-make CC=gcc   # 使用 gcc   编译
-
-make test    # 测试命令
-make test-xy # 测试 xy.h
-make clean
-```
-
-<br>
-
 ## 📝 许可证
 
 - `chsrc` 主程序采用 `GPL-3.0-or-later` 许可证，保证该软件的永久自由
@@ -345,7 +421,7 @@ make clean
 ## ❤️ 致谢
 
 感谢各个镜像站提供的优质免费镜像服务
-1. [source.h](./include/source.h) 包含了通用的镜像站信息
+1. [mirror.c](./src/framework/mirror.c) 包含了通用的镜像站信息
 2. 各个recipe内部定义的专用镜像站
 
 另外特别感谢以下组织或项目:
@@ -362,6 +438,20 @@ make clean
 
 你是否因为使用 `chsrc` 而节省了时间和精力 or whatever?
 
-<img src="https://raw.githubusercontent.com/ccmywish/support-my-oss-work/main/wechat.png" alt="wechat" style="width:300px;"/>
+<img src="https://raw.githubusercontent.com/ccmywish/support-my-oss-work/main/wechat.png" alt="wechat-reward" style="width:300px;"/>
 
 <br>
+
+
+
+[@Aaron-212]:      https://github.com/Aaron-212
+[@chenrui333]:     https://github.com/chenrui333
+[@niheaven]:       https://github.com/niheaven
+[@Gn3po4g]:        https://github.com/Gn3po4g
+[@Jerry-Terrasse]: https://github.com/Jerry-Terrasse
+[@ccmywish]:       https://github.com/ccmywish
+[@Efterklang]:     https://github.com/Efterklang
+[@wickdynex]:      https://github.com/wickdynex
+[@YU-7]:           https://github.com/YU-7
+
+[issue#98 on GitHub]: https://github.com/RubyMetric/chsrc/issues/98

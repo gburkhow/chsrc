@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  * -------------------------------------------------------------
  * File Authors  : Aoran Zeng <ccmywish@qq.com>
- * Contributors  : Nul None <nul@none.org>
+ * Contributors  :  Nul None  <nul@none.org>
  * Created On    : <2024-06-05>
  * Last Modified : <2024-09-14>
  * ------------------------------------------------------------*/
@@ -28,7 +28,7 @@ pl_python_pdm_getsrc (char *option)
 void
 pl_python_pdm_setsrc (char *option)
 {
-  SourceInfo source;
+  Source_t source;
   chsrc_yield_for_the_source (pl_python);
   if (ProgMode_Target_Group!=true)
     chsrc_confirm_source;
@@ -43,7 +43,10 @@ pl_python_pdm_setsrc (char *option)
   chsrc_run (cmd, RunOpt_No_Last_New_Line);
 
   if (ProgMode_Target_Group!=true)
-    chsrc_conclude (&source, SetsrcType_Auto);
+    {
+      ProgMode_ChgType = ProgMode_CMD_Reset ? ChgType_Reset : ChgType_Auto;
+      chsrc_conclude (&source);
+    }
 }
 
 
@@ -53,31 +56,31 @@ pl_python_pdm_setsrc (char *option)
 void
 pl_python_pdm_resetsrc (char *option)
 {
-  pl_python_pdm_setsrc (SetsrcType_Reset);
+  pl_python_pdm_setsrc (option);
 }
 
 
 /**
  * chsrc ls pdm
  */
-FeatInfo
+Feature_t
 pl_python_pdm_feat (char *option)
 {
-  FeatInfo fi = {0};
+  Feature_t f = {0};
 
-  fi.can_get = true;
-  fi.can_reset = true;
+  f.can_get = true;
+  f.can_reset = true;
 
   // PDM 完全支持项目级换源
-  fi.stcan_locally = CanFully;
-  fi.locally = NULL;
+  f.cap_locally = FullyCan;
+  f.cap_locally_explain = NULL;
 
-  fi.can_english = true;
-  fi.can_user_define = true;
+  f.can_english = true;
+  f.can_user_define = true;
 
-  fi.note = NULL;
-  return fi;
+  f.note = NULL;
+  return f;
 }
 
 // def_target_gsrf(pl_python_pdm);
-TargetInfo pl_python_pdm_target = {def_target_inner_gsrf(pl_python_pdm),def_target_sourcesn(pl_python)};
+Target_t pl_python_pdm_target = {def_target_inner_gsrf(pl_python_pdm),def_target_sourcesn(pl_python)};
