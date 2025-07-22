@@ -7,7 +7,7 @@
  ! Contributors  : Mikachu2333 <mikachu.23333@zohomail.com>
  !               |
  ! Created On    : <2023-12-28>
- ! Last Modified : <2025-07-21>
+ ! Last Modified : <2025-07-22>
  ! ---------------------------------------------------------- -->
 
 <div align="center">
@@ -22,6 +22,8 @@
 
 <br>
 
+
+
 <table align="center">
   <tr>
   <td>
@@ -34,6 +36,8 @@
 </table>
 
 <br>
+
+
 
 ## 🤝 协作与贡献
 
@@ -50,7 +54,7 @@
 ---
 
 > [!IMPORTANT]
-> **`chsrc` 可换源 60+ 目标。每个人仅仅贡献和维护自己熟悉的部分，回报是得到其他所有领域专家的帮助。** [欢迎成为 recipe 维护者](https://github.com/RubyMetric/chsrc/issues/130)
+> **`chsrc` 可换源 65+ 目标。每个人仅仅贡献和维护自己熟悉的部分，回报是得到其他所有领域专家的帮助。** [欢迎成为 recipe 维护者](https://github.com/RubyMetric/chsrc/issues/130)
 
 <br>
 
@@ -100,13 +104,27 @@
 
 <br>
 
+
+
 ## 📌 示例
+
+桌面端:
 
 <div align="center">
   <img alt="chsrc set node" src="doc/image/example-set-nodejs.png"/>
 </div>
 
 <br>
+
+安卓:
+
+<div align="center">
+  <img alt="chsrc set python and chsrc set termux" src="doc/image/chsrc-on-Android-set-python-and-termux.jpg" width="300" height="750"/>
+</div>
+
+<br>
+
+
 
 ## 🚀 安装
 
@@ -160,6 +178,8 @@ curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-x86-windo
 ```
 
 </details>
+
+
 
 <details>
 <summary>Linux</summary>
@@ -235,7 +255,11 @@ curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-riscv64-l
 curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-armv7-linux -o chsrc; chmod +x ./chsrc
 ```
 
+如果你所在的处理器架构没有预编译版本，可以使用 [chsrc-bootstrap]
+
 </details>
+
+
 
 <details>
 <summary>macOS</summary>
@@ -285,6 +309,8 @@ curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-x64-macos
 
 </details>
 
+
+
 <details>
 <summary>BSD</summary>
 
@@ -297,20 +323,33 @@ clang -Iinclude -Ilib src/chsrc-main.c -o chsrc
 
 **如果还不存在这些依赖，你将会被死锁住: 我还没有换源，我该如何安装这些依赖呢？**
 
-这就是 [chsrc-bootstrap](./bootstrap/) 起作用的时刻，你可使用BSD系统的原生脚本语言编写 `bootstrapper`，[并向我们提交](https://github.com/RubyMetric/chsrc/issues/230)
+这就是 [chsrc-bootstrap] 起作用的时刻，你可使用BSD系统的原生脚本语言编写 `bootstrapper`，[并向我们提交](https://github.com/RubyMetric/chsrc/issues/230)
 
 注: `chsrc` 实现的 `FreeBSD recipe` 长期存在问题，因此一个新的 `bootstrapper` 是相当必要的，请帮助你自己和大家!
 
 </details>
 
+
+
 <details>
 <summary>Android/Termux</summary>
 
+Termux 中默认无 `Wget`，我们都用 `cURL` 来下载安装
+
 ```bash
-wget -O - https://gitee.com/RubyMetric/chsrc/raw/main/bootstrap/Termux.bash | bash
+# arm64/aarch64
+curl -L https://gitee.com/RubyMetric/chsrc/releases/download/pre/chsrc-arm64-android -o chsrc; chmod +x ./chsrc
+```
+
+如果你所在的处理器架构没有预编译版本，可以使用 [chsrc-bootstrap]:
+
+```bash
+curl -L https://gitee.com/RubyMetric/chsrc/raw/main/bootstrap/Termux.bash | bash
 ```
 
 </details>
+
+
 
 <details>
 <summary>其他平台</summary>
@@ -323,7 +362,7 @@ git clone https://gitee.com/RubyMetric/chsrc.git; cd chsrc; make
 
 **如果还不存在这些依赖，你将会被死锁住: 我还没有换源，我该如何安装这些依赖呢？**
 
-这就是 [chsrc-bootstrap](./bootstrap/) 起作用的时刻，你可使用该平台原生脚本语言编写 `bootstrapper`，[并向我们提交](https://github.com/RubyMetric/chsrc/issues/230)
+这就是 [chsrc-bootstrap] 起作用的时刻，你可使用该平台原生脚本语言编写 `bootstrapper`，[并向我们提交](https://github.com/RubyMetric/chsrc/issues/230)
 
 </details>
 
@@ -332,33 +371,37 @@ git clone https://gitee.com/RubyMetric/chsrc.git; cd chsrc; make
 ## 💡 使用
 
 ```bash
-使用: chsrc <command> [options] [target] [mirror]
+名称:
+   chsrc - Change Source - (GPLv3+)
 
-help                      # 打印此帮助，或 h, -h, --help
-issue                     # 查看相关issue
+使用:
+   chsrc <command> [options] [target] [mirror]
 
-list (或 ls, 或 l)        # 列出可用镜像源，和可换源目标
-list mirror/target        # 列出可用镜像源，或可换源目标
-list os/lang/ware         # 列出可换源的操作系统/编程语言/软件
+命令:
+   help,  h                   打印此帮助，或 -h, --help
+   issue, i                   查看相关issue
 
-measure <target>          # 对该目标所有源测速
-cesu    <target>
+   list, ls, l                列出可用镜像站和可换源目标
+   list  mirror|target        列出支持的: 镜像站/换源目标
+   list  os|lang|ware         列出支持的: 操作系统/编程语言/软件
+   list   <target>            查看该目标可用源与支持功能
 
-list <target>             # 查看该目标可用源与支持功能
-get  <target>             # 查看该目标当前源的使用情况
+   measure, m, cesu <target>  对该目标所有源测速
 
-set  <target>             # 换源，自动测速后挑选最快源
-set  <target>  first      # 换源，使用维护团队测速第一的源
-set  <target> <mirror>    # 换源，指定使用某镜像站 (通过list命令查看)
-set  <target> https://url # 换源，用户自定义源URL
-reset <target>            # 重置，使用上游默认使用的源
+   get, g <target>            查看该目标当前源的使用情况
+
+   set, s <target>            换源，自动测速后挑选最快源
+   set    <target>  first     换源，使用维护团队测速第一的源
+   set    <target> <mirror>   换源，指定使用某镜像站 (通过list <target>查看)
+   set    <target>  <URL>     换源，用户自定义源URL
+   reset  <target>            重置，使用上游默认使用的源
 
 选项:
--dry                      # Dry Run，模拟换源过程，命令仅打印并不运行
--local                    # 仅对某项目而非全局换源 (仅部分软件如bundler,pdm支持)
--ipv6                     # 使用IPv6测速
--en(glish)                # 使用英文输出
--no-color                 # 无颜色输出
+   -dry                       Dry Run，模拟换源过程，命令仅打印并不运行
+   -local                     仅对本项目而非全局换源 (通过ls <target>查看支持情况)
+   -ipv6                      使用IPv6测速
+   -en(glish)                 使用英文输出
+   -no-color                  无颜色输出
 ```
 
 <br>
@@ -529,6 +572,7 @@ chsrc set conda  | anaconda
 <br>
 
 [rawstr4c]:        https://github.com/RubyMetric/rawstr4c
+[chsrc-bootstrap]: ./bootstrap/
 
 [@Aaron-212]:      https://github.com/Aaron-212
 [@chenrui333]:     https://github.com/chenrui333
